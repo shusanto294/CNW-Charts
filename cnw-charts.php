@@ -85,6 +85,10 @@ class CNWCharts {
         
         $chart_type = get_post_meta($post->ID, '_cnw_chart_type', true);
         $chart_data = get_post_meta($post->ID, '_cnw_chart_data', true);
+        $chart_height = get_post_meta($post->ID, '_cnw_chart_height', true);
+        if (empty($chart_height)) {
+            $chart_height = 400; // Default height
+        }
         
         ?>
         <div id="cnw-chart-config">
@@ -96,6 +100,14 @@ class CNWCharts {
                             <option value="bar" <?php selected($chart_type, 'bar'); ?>>Bar Chart</option>
                             <option value="grouped-bar" <?php selected($chart_type, 'grouped-bar'); ?>>Grouped Bar Chart</option>
                         </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">Height</th>
+                    <td>
+                        <input type="number" name="cnw_chart_height" id="cnw_chart_height" value="<?php echo esc_attr($chart_height); ?>" min="200" max="1000" style="width: 100px;" />
+                        <span style="margin-left: 5px; color: #666;">px (default: 400px)</span>
+                        <p class="description">Set the height of the chart in pixels. Recommended range: 200px - 1000px.</p>
                     </td>
                 </tr>
                 <tr id="bar-chart-data" style="display: none;">
@@ -339,6 +351,15 @@ class CNWCharts {
             update_post_meta($post_id, '_cnw_chart_type', sanitize_text_field($_POST['cnw_chart_type']));
         }
         
+        if (isset($_POST['cnw_chart_height'])) {
+            $height = intval($_POST['cnw_chart_height']);
+            if ($height < 200) $height = 200;
+            if ($height > 1000) $height = 1000;
+            update_post_meta($post_id, '_cnw_chart_height', $height);
+        } else {
+            update_post_meta($post_id, '_cnw_chart_height', 400); // Default height
+        }
+        
         // Process data items for bar chart
         if (isset($_POST['data_items']) && is_array($_POST['data_items'])) {
             $data_items = array();
@@ -426,6 +447,10 @@ class CNWCharts {
         
         $chart_type = get_post_meta($chart_id, '_cnw_chart_type', true);
         $chart_data = json_decode(get_post_meta($chart_id, '_cnw_chart_data', true), true);
+        $chart_height = get_post_meta($chart_id, '_cnw_chart_height', true);
+        if (empty($chart_height)) {
+            $chart_height = 400; // Default height
+        }
         
         if (!$chart_data || empty($chart_data)) {
             return '<p>No chart data available.</p>';
@@ -557,7 +582,8 @@ class CNWCharts {
                         'ticks' => array(
                             'font' => array(
                                 'size' => 11
-                            )
+                            ),
+                            'callback' => '%%Y_AXIS_CALLBACK%%'
                         )
                     ),
                     'x' => array(
@@ -582,7 +608,7 @@ class CNWCharts {
         
         $unique_id = 'cnw-chart-' . $chart_id . '-' . uniqid();
         
-        $output = '<div class="cnw-chart-container" style="width: 100%; max-width: 100%; height: 400px; margin: 20px 0; border: 1px solid #ddd; border-radius: 8px; padding: 20px; background: #ffffff; box-sizing: border-box;">';
+        $output = '<div class="cnw-chart-container" style="width: 100%; max-width: 100%; height: ' . intval($chart_height) . 'px; margin: 20px 0; border: 1px solid #ddd; border-radius: 8px; padding: 20px; background: #ffffff; box-sizing: border-box;">';
         $output .= '<canvas id="' . esc_attr($unique_id) . '" style="width: 100%; height: 100%;"></canvas>';
         $output .= '</div>';
         // Prepare chart data with prefix/postfix for tooltips
@@ -633,6 +659,45 @@ class CNWCharts {
             
             var formattedValue = prefix + value + postfix;
             return (datasetLabel ? datasetLabel + ": " : "") + formattedValue;
+        }', $config_json);
+        
+        // Replace the Y-axis callback placeholder
+        $config_json = str_replace('"%%Y_AXIS_CALLBACK%%"', 'function(value, index, values) {
+            var chartData = ' . json_encode($chart_items_data) . ';
+            var prefix = "";
+            var postfix = "";
+            
+            // For bar charts, get prefix/postfix from the first item
+            // For grouped charts, use common format if all items have same prefix/postfix
+            var firstKey = Object.keys(chartData)[0];
+            if (firstKey) {
+                if (typeof chartData[firstKey] === "object" && chartData[firstKey].prefix !== undefined) {
+                    prefix = chartData[firstKey].prefix || "";
+                    postfix = chartData[firstKey].postfix || "";
+                } else {
+                    // For grouped charts, check if all groups have the same format
+                    var allPrefixes = [];
+                    var allPostfixes = [];
+                    Object.keys(chartData).forEach(function(label) {
+                        Object.keys(chartData[label]).forEach(function(group) {
+                            if (chartData[label][group].prefix !== undefined) {
+                                allPrefixes.push(chartData[label][group].prefix);
+                                allPostfixes.push(chartData[label][group].postfix);
+                            }
+                        });
+                    });
+                    
+                    // Use common prefix/postfix if all are the same
+                    if (allPrefixes.length > 0 && allPrefixes.every(p => p === allPrefixes[0])) {
+                        prefix = allPrefixes[0] || "";
+                    }
+                    if (allPostfixes.length > 0 && allPostfixes.every(p => p === allPostfixes[0])) {
+                        postfix = allPostfixes[0] || "";
+                    }
+                }
+            }
+            
+            return prefix + value + postfix;
         }', $config_json);
         
         $output .= '<style>
