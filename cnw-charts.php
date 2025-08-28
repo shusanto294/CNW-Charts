@@ -2,7 +2,7 @@
 /**
  * Plugin Name: CNW Charts
  * Description: Create beautiful charts using Chart.js with custom post types and shortcodes
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: Cloud Nine Web
  * Author URI: https://cloudnineweb.co/
  * Text Domain: cnw-charts
