@@ -1,0 +1,79 @@
+/* Admin styles for CNW Charts */
+.dataset-group {
+    margin-bottom: 15px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.dataset-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.dataset-group input[type="text"],
+.dataset-group textarea {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.dataset-group textarea {
+    height: 60px;
+    resize: vertical;
+}
+
+.remove-dataset {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.remove-dataset:hover {
+    background-color: #c82333;
+}
+
+#add-dataset {
+    background-color: #007cba;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+#add-dataset:hover {
+    background-color: #005a87;
+}
+
+#copy-shortcode {
+    margin-top: 10px;
+    width: 100%;
+}
+
+#chart-shortcode {
+    margin-bottom: 10px;
+}
+
+.cnw-chart-preview {
+    margin-top: 20px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: white;
+}
+
+.form-table th {
+    width: 150px;
+}
+
+.description {
+    font-style: italic;
+    color: #666;
+    margin-top: 5px;
+}
