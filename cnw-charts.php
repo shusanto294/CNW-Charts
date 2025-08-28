@@ -538,7 +538,7 @@ class CNWCharts {
                     'legend' => array(
                         'display' => ($chart_type === 'grouped-bar'),
                         'position' => 'top',
-                        'align' => 'start',
+                        'align' => 'center',
                         'labels' => array(
                             'usePointStyle' => true,
                             'pointStyle' => 'rect',
@@ -548,11 +548,6 @@ class CNWCharts {
                             )
                         ),
                         'fullSize' => true
-                    ),
-                    'layout' => array(
-                        'padding' => array(
-                            'top' => ($chart_type === 'grouped-bar') ? 30 : 0
-                        )
                     ),
                     'tooltip' => array(
                         'enabled' => true,
@@ -570,6 +565,7 @@ class CNWCharts {
                 ),
                 'layout' => array(
                     'padding' => array(
+                        'top' => ($chart_type === 'grouped-bar') ? 30 : 0,
                         'bottom' => 10
                     )
                 ),
@@ -580,6 +576,7 @@ class CNWCharts {
                             'color' => '#e0e0e0'
                         ),
                         'ticks' => array(
+                            'stepSize' => 10,
                             'font' => array(
                                 'size' => 11
                             ),
@@ -608,7 +605,7 @@ class CNWCharts {
         
         $unique_id = 'cnw-chart-' . $chart_id . '-' . uniqid();
         
-        $output = '<div class="cnw-chart-container" style="width: 100%; max-width: 100%; height: ' . intval($chart_height) . 'px; margin: 20px 0; border: 1px solid #ddd; border-radius: 8px; padding: 20px; background: #ffffff; box-sizing: border-box;">';
+        $output = '<div class="cnw-chart-container" style="width: 100%; max-width: 100%; height: ' . intval($chart_height) . 'px; margin: 20px 0; background: transparent; box-sizing: border-box;">';
         $output .= '<canvas id="' . esc_attr($unique_id) . '" style="width: 100%; height: 100%;"></canvas>';
         $output .= '</div>';
         // Prepare chart data with prefix/postfix for tooltips
