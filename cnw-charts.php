@@ -169,7 +169,10 @@ class CNWCharts {
                                     <div class="chart-group" data-group-index="<?php echo $group_index; ?>" style="border: 2px solid #007cba; padding: 20px; margin-bottom: 20px; border-radius: 8px; background: #f0f8ff;">
                                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
                                             <h4 style="margin: 0; color: #007cba;">Group <?php echo $group_index + 1; ?>: <?php echo esc_html($group['group_name']); ?></h4>
-                                            <button type="button" class="remove-chart-group" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">Remove Group</button>
+                                            <div style="display: flex; gap: 8px;">
+                                                <button type="button" class="duplicate-chart-group" data-group-index="<?php echo $group_index; ?>" style="background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Duplicate</button>
+                                                <button type="button" class="remove-chart-group" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">Remove Group</button>
+                                            </div>
                                         </div>
                                         
                                         <div style="margin-bottom: 15px;">
@@ -426,27 +429,74 @@ class CNWCharts {
             return '<p>No chart data available.</p>';
         }
         
-        $data_values = array();
-        $colors = array();
+        $datasets = array();
         $chart_labels = array();
         
-        // Process data items for bar chart
-        foreach ($chart_data as $item) {
-            $data_values[] = floatval($item['value']);
-            $colors[] = $item['color'];
-            $chart_labels[] = $item['label'];
-        }
-        
-        $datasets = array(
-            array(
+        if ($chart_type === 'bar') {
+            // Simple Bar Chart - Single dataset with multiple colors
+            $data_values = array();
+            $colors = array();
+            
+            foreach ($chart_data as $item) {
+                $chart_labels[] = $item['label'];
+                $data_values[] = floatval($item['value']);
+                $colors[] = $item['color'];
+            }
+            
+            $datasets[] = array(
                 'data' => $data_values,
                 'backgroundColor' => $colors,
                 'borderColor' => $colors,
                 'borderWidth' => 1
-            )
-        );
+            );
+            
+        } elseif ($chart_type === 'grouped-bar') {
+            // Grouped Bar Chart - Multiple datasets, each with single color
+            $all_labels = array();
+            
+            // First pass: collect all unique labels across all groups
+            foreach ($chart_data as $group) {
+                if (isset($group['items'])) {
+                    foreach ($group['items'] as $item) {
+                        if (!in_array($item['label'], $all_labels)) {
+                            $all_labels[] = $item['label'];
+                        }
+                    }
+                }
+            }
+            $chart_labels = $all_labels;
+            
+            // Second pass: create datasets for each group
+            foreach ($chart_data as $group) {
+                $group_data = array();
+                $group_colors = array();
+                
+                // Initialize all values to 0
+                foreach ($all_labels as $label) {
+                    $group_data[$label] = 0;
+                }
+                
+                // Fill in actual values
+                if (isset($group['items'])) {
+                    foreach ($group['items'] as $item) {
+                        $group_data[$item['label']] = floatval($item['value']);
+                        $group_colors[] = $item['color'];
+                    }
+                }
+                
+                // Use first item's color for the entire dataset
+                $dataset_color = !empty($group_colors) ? $group_colors[0] : '#007cba';
+                
+                $datasets[] = array(
+                    'label' => $group['group_name'],
+                    'data' => array_values($group_data),
+                    'backgroundColor' => $dataset_color,
+                    'borderColor' => $dataset_color,
+                    'borderWidth' => 1
+                );
+            }
+        }
         
-        // Convert grouped-bar to bar for Chart.js
         $chart_js_type = ($chart_type === 'grouped-bar') ? 'bar' : $chart_type;
         
         $chart_config = array(
@@ -457,13 +507,57 @@ class CNWCharts {
             ),
             'options' => array(
                 'responsive' => true,
-                'maintainAspectRatio' => false
+                'maintainAspectRatio' => false,
+                'plugins' => array(
+                    'legend' => array(
+                        'display' => ($chart_type === 'grouped-bar'),
+                        'position' => 'top',
+                        'align' => 'start',
+                        'labels' => array(
+                            'usePointStyle' => true,
+                            'pointStyle' => 'rect',
+                            'padding' => 20,
+                            'font' => array(
+                                'size' => 12
+                            )
+                        )
+                    )
+                ),
+                'scales' => array(
+                    'y' => array(
+                        'beginAtZero' => true,
+                        'grid' => array(
+                            'color' => '#e0e0e0'
+                        ),
+                        'ticks' => array(
+                            'font' => array(
+                                'size' => 11
+                            )
+                        )
+                    ),
+                    'x' => array(
+                        'grid' => array(
+                            'display' => false
+                        ),
+                        'ticks' => array(
+                            'font' => array(
+                                'size' => 11
+                            )
+                        )
+                    )
+                ),
+                'interaction' => array(
+                    'intersect' => false
+                ),
+                'hover' => array(
+                    'mode' => 'index'
+                )
             )
         );
         
         $unique_id = 'cnw-chart-' . $chart_id . '-' . uniqid();
         
-        $output = '<div style="width: 400px; height: 300px;">';
+        $output = '<div style="width: 800px; height: 400px; margin: 20px 0; border: 1px solid #ddd; border-radius: 8px; padding: 20px; background: #ffffff;">';
         $output .= '<canvas id="' . esc_attr($unique_id) . '"></canvas>';
         $output .= '</div>';
         $output .= '<script>

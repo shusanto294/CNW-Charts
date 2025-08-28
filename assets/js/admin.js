@@ -79,7 +79,10 @@ jQuery(document).ready(function($) {
         var newGroup = $('<div class="chart-group" data-group-index="' + index + '" style="border: 2px solid #007cba; padding: 20px; margin-bottom: 20px; border-radius: 8px; background: #f0f8ff;">' +
             '<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">' +
                 '<h4 style="margin: 0; color: #007cba;">Group ' + (index + 1) + '</h4>' +
-                '<button type="button" class="remove-chart-group" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">Remove Group</button>' +
+                '<div style="display: flex; gap: 8px;">' +
+                    '<button type="button" class="duplicate-chart-group" data-group-index="' + index + '" style="background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Duplicate</button>' +
+                    '<button type="button" class="remove-chart-group" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">Remove Group</button>' +
+                '</div>' +
             '</div>' +
             '<div style="margin-bottom: 15px;">' +
                 '<label style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">Group Name:</label>' +
@@ -147,6 +150,43 @@ jQuery(document).ready(function($) {
         if (itemsContainer.children('.group-data-item').length === 0) {
             itemsContainer.append('<p style="text-align: center; color: #666; margin: 15px 0; font-style: italic;">No data items in this group yet. Click "Add Data Item" below.</p>');
         }
+    });
+    
+    // Duplicate chart group functionality
+    $(document).on('click', '.duplicate-chart-group', function() {
+        var originalGroup = $(this).closest('.chart-group');
+        var container = $('#chart-groups-container');
+        var newIndex = container.children('.chart-group').length;
+        
+        // Clone the group
+        var clonedGroup = originalGroup.clone();
+        
+        // Update group index and title
+        clonedGroup.attr('data-group-index', newIndex);
+        clonedGroup.find('h4').text('Group ' + (newIndex + 1));
+        clonedGroup.find('.duplicate-chart-group').attr('data-group-index', newIndex);
+        
+        // Update all input names in the cloned group
+        clonedGroup.find('input, select, textarea').each(function() {
+            var name = $(this).attr('name');
+            if (name) {
+                // Replace the group index in the name
+                var newName = name.replace(/\[(\d+)\]/, '[' + newIndex + ']');
+                $(this).attr('name', newName);
+            }
+        });
+        
+        // Update group name input specifically
+        var groupNameInput = clonedGroup.find('input[name*="group_name"]');
+        var originalName = groupNameInput.val();
+        groupNameInput.val(originalName + ' (Copy)');
+        
+        // Update data-group attributes for nested elements
+        clonedGroup.find('.group-data-items').attr('data-group', newIndex);
+        clonedGroup.find('.add-group-item').attr('data-group', newIndex);
+        
+        // Append the cloned group
+        container.append(clonedGroup);
     });
     
     // Remove chart group functionality
