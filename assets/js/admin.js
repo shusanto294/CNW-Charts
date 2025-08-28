@@ -68,6 +68,73 @@ jQuery(document).ready(function($) {
         }
     });
     
+    // Add pie data item functionality - using delegation properly
+    $(document).on('click', '#add-pie-data-item', function(e) {
+        e.preventDefault();
+        console.log('Pie chart add data item clicked'); // Debug log
+        
+        var $this = $(this);
+        var container = $('#pie-data-items-container');
+        
+        console.log('Button found:', $this.length);
+        console.log('Container found:', container.length);
+        
+        // Remove empty state message if it exists
+        container.find('> p').remove();
+        
+        var index = container.children('.pie-data-item').length;
+        
+        // Color palette for pie chart slices - ensuring good contrast and visibility
+        var colorPalette = [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', 
+            '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384',
+            '#36A2EB', '#FFCE56'
+        ];
+        var itemColor = colorPalette[index % colorPalette.length];
+        
+        var newItem = $('<div class="pie-data-item" data-index="' + index + '" style="display: flex; align-items: center; gap: 10px; padding: 15px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px; background: #f9f9f9;">' +
+            '<div style="flex: 1;">' +
+                '<label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Label:</label>' +
+                '<input type="text" name="pie_data_items[' + index + '][label]" placeholder="Item label" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />' +
+            '</div>' +
+            '<div style="flex: 0 0 80px;">' +
+                '<label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Prefix:</label>' +
+                '<input type="text" name="pie_data_items[' + index + '][prefix]" placeholder="$" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />' +
+            '</div>' +
+            '<div style="flex: 1;">' +
+                '<label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Value:</label>' +
+                '<input type="number" step="0.01" name="pie_data_items[' + index + '][value]" placeholder="Item value" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />' +
+            '</div>' +
+            '<div style="flex: 0 0 80px;">' +
+                '<label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Postfix:</label>' +
+                '<input type="text" name="pie_data_items[' + index + '][postfix]" placeholder="%" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />' +
+            '</div>' +
+            '<div style="flex: 0 0 100px;">' +
+                '<label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Color:</label>' +
+                '<div style="display: flex; align-items: center; gap: 5px;">' +
+                    '<input type="color" name="pie_data_items[' + index + '][color]" value="' + itemColor + '" style="width: 40px; height: 32px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; padding: 0;" />' +
+                    '<input type="text" name="pie_data_items[' + index + '][color_text]" value="' + itemColor + '" placeholder="' + itemColor + '" style="width: 55px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 11px;" />' +
+                '</div>' +
+            '</div>' +
+            '<div style="flex: 0 0 auto;">' +
+                '<button type="button" class="remove-pie-data-item" style="background: #dc3545; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; margin-top: 22px;">Remove</button>' +
+            '</div>' +
+            '</div>');
+        container.append(newItem);
+    });
+    
+    // Remove pie data item functionality
+    $(document).on('click', '.remove-pie-data-item', function() {
+        var item = $(this).closest('.pie-data-item');
+        var container = $('#pie-data-items-container');
+        item.remove();
+        
+        // If no more data items, show empty state message
+        if (container.children('.pie-data-item').length === 0) {
+            container.append('<p style="text-align: center; color: #666; margin: 20px 0;">No data items added yet. Click "Add Data Item" to get started.</p>');
+        }
+    });
+    
     // Add chart group functionality
     $(document).on('click', '#add-chart-group', function() {
         var container = $('#chart-groups-container');
@@ -206,22 +273,148 @@ jQuery(document).ready(function($) {
     // Initialize on page load
     if ($('#cnw_chart_type').length) {
         toggleChartDataSection();
+        
+        // If we're already on pie/doughnut chart, bind events immediately
+        var chartType = $('#cnw_chart_type').val();
+        if (chartType === 'pie' || chartType === 'doughnut') {
+            bindPieChartEvents();
+        }
     }
+    
+    // Direct event binding for pie chart buttons (backup method)
+    $('#add-pie-data-item').on('click', function(e) {
+        e.preventDefault();
+        console.log('Direct pie chart add data item clicked'); // Debug log
+        
+        var container = $('#pie-data-items-container');
+        
+        // Remove empty state message if it exists
+        container.find('> p').remove();
+        
+        var index = container.children('.pie-data-item').length;
+        
+        // Color palette for pie chart slices
+        var colorPalette = [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', 
+            '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384',
+            '#36A2EB', '#FFCE56'
+        ];
+        var itemColor = colorPalette[index % colorPalette.length];
+        
+        var newItem = $('<div class="pie-data-item" data-index="' + index + '" style="display: flex; align-items: center; gap: 10px; padding: 15px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px; background: #f9f9f9;">' +
+            '<div style="flex: 1;">' +
+                '<label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Label:</label>' +
+                '<input type="text" name="pie_data_items[' + index + '][label]" placeholder="Item label" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />' +
+            '</div>' +
+            '<div style="flex: 0 0 80px;">' +
+                '<label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Prefix:</label>' +
+                '<input type="text" name="pie_data_items[' + index + '][prefix]" placeholder="$" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />' +
+            '</div>' +
+            '<div style="flex: 1;">' +
+                '<label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Value:</label>' +
+                '<input type="number" step="0.01" name="pie_data_items[' + index + '][value]" placeholder="Item value" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />' +
+            '</div>' +
+            '<div style="flex: 0 0 80px;">' +
+                '<label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Postfix:</label>' +
+                '<input type="text" name="pie_data_items[' + index + '][postfix]" placeholder="%" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />' +
+            '</div>' +
+            '<div style="flex: 0 0 100px;">' +
+                '<label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Color:</label>' +
+                '<div style="display: flex; align-items: center; gap: 5px;">' +
+                    '<input type="color" name="pie_data_items[' + index + '][color]" value="' + itemColor + '" style="width: 40px; height: 32px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; padding: 0;" />' +
+                    '<input type="text" name="pie_data_items[' + index + '][color_text]" value="' + itemColor + '" placeholder="' + itemColor + '" style="width: 55px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 11px;" />' +
+                '</div>' +
+            '</div>' +
+            '<div style="flex: 0 0 auto;">' +
+                '<button type="button" class="remove-pie-data-item" style="background: #dc3545; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; margin-top: 22px;">Remove</button>' +
+            '</div>' +
+            '</div>');
+        container.append(newItem);
+    });
 });
 
 function toggleChartDataSection() {
     var chartType = jQuery('#cnw_chart_type').val();
     var barDataSection = jQuery('#bar-chart-data');
     var groupedDataSection = jQuery('#grouped-bar-chart-data');
+    var pieDataSection = jQuery('#pie-chart-data');
     
     if (chartType === 'bar') {
         barDataSection.show();
         groupedDataSection.hide();
+        pieDataSection.hide();
     } else if (chartType === 'grouped-bar') {
         barDataSection.hide();
         groupedDataSection.show();
+        pieDataSection.hide();
+    } else if (chartType === 'pie' || chartType === 'doughnut') {
+        barDataSection.hide();
+        groupedDataSection.hide();
+        pieDataSection.show();
+        
+        // Re-bind pie chart button events when section becomes visible
+        setTimeout(function() {
+            bindPieChartEvents();
+        }, 100);
     } else {
         barDataSection.hide();
         groupedDataSection.hide();
+        pieDataSection.hide();
     }
+}
+
+function bindPieChartEvents() {
+    // Unbind existing handlers to prevent duplicates
+    jQuery('#add-pie-data-item').off('click.pieChart');
+    
+    // Bind the pie chart add item event
+    jQuery('#add-pie-data-item').on('click.pieChart', function(e) {
+        e.preventDefault();
+        console.log('Pie chart add data item clicked - rebind method');
+        
+        var container = jQuery('#pie-data-items-container');
+        
+        // Remove empty state message if it exists
+        container.find('> p').remove();
+        
+        var index = container.children('.pie-data-item').length;
+        
+        // Color palette for pie chart slices
+        var colorPalette = [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', 
+            '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384',
+            '#36A2EB', '#FFCE56'
+        ];
+        var itemColor = colorPalette[index % colorPalette.length];
+        
+        var newItem = jQuery('<div class="pie-data-item" data-index="' + index + '" style="display: flex; align-items: center; gap: 10px; padding: 15px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px; background: #f9f9f9;">' +
+            '<div style="flex: 1;">' +
+                '<label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Label:</label>' +
+                '<input type="text" name="pie_data_items[' + index + '][label]" placeholder="Item label" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />' +
+            '</div>' +
+            '<div style="flex: 0 0 80px;">' +
+                '<label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Prefix:</label>' +
+                '<input type="text" name="pie_data_items[' + index + '][prefix]" placeholder="$" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />' +
+            '</div>' +
+            '<div style="flex: 1;">' +
+                '<label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Value:</label>' +
+                '<input type="number" step="0.01" name="pie_data_items[' + index + '][value]" placeholder="Item value" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />' +
+            '</div>' +
+            '<div style="flex: 0 0 80px;">' +
+                '<label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Postfix:</label>' +
+                '<input type="text" name="pie_data_items[' + index + '][postfix]" placeholder="%" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />' +
+            '</div>' +
+            '<div style="flex: 0 0 100px;">' +
+                '<label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Color:</label>' +
+                '<div style="display: flex; align-items: center; gap: 5px;">' +
+                    '<input type="color" name="pie_data_items[' + index + '][color]" value="' + itemColor + '" style="width: 40px; height: 32px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; padding: 0;" />' +
+                    '<input type="text" name="pie_data_items[' + index + '][color_text]" value="' + itemColor + '" placeholder="' + itemColor + '" style="width: 55px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 11px;" />' +
+                '</div>' +
+            '</div>' +
+            '<div style="flex: 0 0 auto;">' +
+                '<button type="button" class="remove-pie-data-item" style="background: #dc3545; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; margin-top: 22px;">Remove</button>' +
+            '</div>' +
+            '</div>');
+        container.append(newItem);
+    });
 }

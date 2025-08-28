@@ -102,6 +102,8 @@ class CNWCharts {
                         <select name="cnw_chart_type" id="cnw_chart_type" onchange="toggleChartFields()">
                             <option value="bar" <?php selected($chart_type, 'bar'); ?>>Bar Chart</option>
                             <option value="grouped-bar" <?php selected($chart_type, 'grouped-bar'); ?>>Grouped Bar Chart</option>
+                            <option value="pie" <?php selected($chart_type, 'pie'); ?>>Pie Chart</option>
+                            <option value="doughnut" <?php selected($chart_type, 'doughnut'); ?>>Donut Chart</option>
                         </select>
                     </td>
                 </tr>
@@ -251,6 +253,126 @@ class CNWCharts {
                         <button type="button" id="add-chart-group" style="background: #007cba; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-top: 15px; font-size: 14px;">Add Group</button>
                     </td>
                 </tr>
+                <tr id="pie-chart-data" style="display: none;">
+                    <th scope="row">Chart Data</th>
+                    <td>
+                        <div id="pie-data-items-container">
+                            <?php
+                            // Only load pie data if chart type is pie or doughnut
+                            $pie_data = array();
+                            if ($chart_type === 'pie' || $chart_type === 'doughnut') {
+                                $pie_data = json_decode($chart_data, true) ?: array();
+                            }
+                            
+                            if (empty($pie_data)) {
+                                echo '<p style="text-align: center; color: #666; margin: 20px 0;">No data items added yet. Click "Add Data Item" to get started.</p>';
+                            } else {
+                                foreach ($pie_data as $index => $item) {
+                                    ?>
+                                    <div class="pie-data-item" data-index="<?php echo $index; ?>" style="display: flex; align-items: center; gap: 10px; padding: 15px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px; background: #f9f9f9;">
+                                        <div style="flex: 1;">
+                                            <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Label:</label>
+                                            <input type="text" name="pie_data_items[<?php echo $index; ?>][label]" value="<?php echo esc_attr($item['label']); ?>" placeholder="Item label" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />
+                                        </div>
+                                        <div style="flex: 0 0 80px;">
+                                            <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Prefix:</label>
+                                            <input type="text" name="pie_data_items[<?php echo $index; ?>][prefix]" value="<?php echo esc_attr(isset($item['prefix']) ? $item['prefix'] : ''); ?>" placeholder="$" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />
+                                        </div>
+                                        <div style="flex: 1;">
+                                            <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Value:</label>
+                                            <input type="number" step="0.01" name="pie_data_items[<?php echo $index; ?>][value]" value="<?php echo esc_attr($item['value']); ?>" placeholder="Item value" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />
+                                        </div>
+                                        <div style="flex: 0 0 80px;">
+                                            <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Postfix:</label>
+                                            <input type="text" name="pie_data_items[<?php echo $index; ?>][postfix]" value="<?php echo esc_attr(isset($item['postfix']) ? $item['postfix'] : ''); ?>" placeholder="%" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />
+                                        </div>
+                                        <div style="flex: 0 0 100px;">
+                                            <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Color:</label>
+                                            <div style="display: flex; align-items: center; gap: 5px;">
+                                                <input type="color" name="pie_data_items[<?php echo $index; ?>][color]" value="<?php echo esc_attr($item['color']); ?>" style="width: 40px; height: 32px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; padding: 0;" />
+                                                <input type="text" name="pie_data_items[<?php echo $index; ?>][color_text]" value="<?php echo esc_attr($item['color']); ?>" placeholder="#007cba" style="width: 55px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 11px;" />
+                                            </div>
+                                        </div>
+                                        <div style="flex: 0 0 auto;">
+                                            <button type="button" class="remove-pie-data-item" style="background: #dc3545; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; margin-top: 22px;">Remove</button>
+                                        </div>
+                                    </div>
+                                    <?php
+                                }
+                            }
+                            ?>
+                        </div>
+                        <button type="button" id="add-pie-data-item" onclick="addPieDataItem()" style="background: #007cba; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-top: 15px; font-size: 14px;">Add Data Item</button>
+                        <script>
+                        function addPieDataItem() {
+                            console.log('Add pie data item clicked - inline function');
+                            var container = document.getElementById('pie-data-items-container');
+                            if (!container) {
+                                console.error('Container not found');
+                                return;
+                            }
+                            
+                            // Remove empty state message if it exists
+                            var emptyMessage = container.querySelector('p');
+                            if (emptyMessage) {
+                                emptyMessage.remove();
+                            }
+                            
+                            var index = container.querySelectorAll('.pie-data-item').length;
+                            
+                            // Color palette for pie chart slices
+                            var colorPalette = [
+                                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', 
+                                '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384',
+                                '#36A2EB', '#FFCE56'
+                            ];
+                            var itemColor = colorPalette[index % colorPalette.length];
+                            
+                            var newItemHTML = '<div class="pie-data-item" data-index="' + index + '" style="display: flex; align-items: center; gap: 10px; padding: 15px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px; background: #f9f9f9;">' +
+                                '<div style="flex: 1;">' +
+                                    '<label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Label:</label>' +
+                                    '<input type="text" name="pie_data_items[' + index + '][label]" placeholder="Item label" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />' +
+                                '</div>' +
+                                '<div style="flex: 0 0 80px;">' +
+                                    '<label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Prefix:</label>' +
+                                    '<input type="text" name="pie_data_items[' + index + '][prefix]" placeholder="$" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />' +
+                                '</div>' +
+                                '<div style="flex: 1;">' +
+                                    '<label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Value:</label>' +
+                                    '<input type="number" step="0.01" name="pie_data_items[' + index + '][value]" placeholder="Item value" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />' +
+                                '</div>' +
+                                '<div style="flex: 0 0 80px;">' +
+                                    '<label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Postfix:</label>' +
+                                    '<input type="text" name="pie_data_items[' + index + '][postfix]" placeholder="%" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />' +
+                                '</div>' +
+                                '<div style="flex: 0 0 100px;">' +
+                                    '<label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 12px; color: #666;">Color:</label>' +
+                                    '<div style="display: flex; align-items: center; gap: 5px;">' +
+                                        '<input type="color" name="pie_data_items[' + index + '][color]" value="' + itemColor + '" style="width: 40px; height: 32px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; padding: 0;" />' +
+                                        '<input type="text" name="pie_data_items[' + index + '][color_text]" value="' + itemColor + '" placeholder="' + itemColor + '" style="width: 55px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 11px;" />' +
+                                    '</div>' +
+                                '</div>' +
+                                '<div style="flex: 0 0 auto;">' +
+                                    '<button type="button" class="remove-pie-data-item" onclick="removePieDataItem(this)" style="background: #dc3545; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; margin-top: 22px;">Remove</button>' +
+                                '</div>' +
+                            '</div>';
+                            
+                            container.insertAdjacentHTML('beforeend', newItemHTML);
+                        }
+                        
+                        function removePieDataItem(button) {
+                            var item = button.closest('.pie-data-item');
+                            var container = document.getElementById('pie-data-items-container');
+                            item.remove();
+                            
+                            // If no more data items, show empty state message
+                            if (container.querySelectorAll('.pie-data-item').length === 0) {
+                                container.innerHTML = '<p style="text-align: center; color: #666; margin: 20px 0;">No data items added yet. Click "Add Data Item" to get started.</p>';
+                            }
+                        }
+                        </script>
+                    </td>
+                </tr>
             </table>
         </div>
         
@@ -285,16 +407,24 @@ class CNWCharts {
                 var chartType = $('#cnw_chart_type').val();
                 var barDataSection = $('#bar-chart-data');
                 var groupedDataSection = $('#grouped-bar-chart-data');
+                var pieDataSection = $('#pie-chart-data');
                 
                 if (chartType === 'bar') {
                     barDataSection.show();
                     groupedDataSection.hide();
+                    pieDataSection.hide();
                 } else if (chartType === 'grouped-bar') {
                     barDataSection.hide();
                     groupedDataSection.show();
+                    pieDataSection.hide();
+                } else if (chartType === 'pie' || chartType === 'doughnut') {
+                    barDataSection.hide();
+                    groupedDataSection.hide();
+                    pieDataSection.show();
                 } else {
                     barDataSection.hide();
                     groupedDataSection.hide();
+                    pieDataSection.hide();
                 }
             }
             
@@ -415,6 +545,37 @@ class CNWCharts {
             
             update_post_meta($post_id, '_cnw_chart_data', json_encode($chart_groups));
         }
+        
+        // Process data items for pie/donut chart
+        if (isset($_POST['pie_data_items']) && is_array($_POST['pie_data_items'])) {
+            $pie_data_items = array();
+            
+            // Default color palette for pie charts
+            $default_colors = array(
+                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', 
+                '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384',
+                '#36A2EB', '#FFCE56'
+            );
+            
+            $index = 0;
+            foreach ($_POST['pie_data_items'] as $item) {
+                if (!empty($item['label']) && !empty($item['value'])) {
+                    // Use provided color or default from palette
+                    $item_color = !empty($item['color']) ? $item['color'] : $default_colors[$index % count($default_colors)];
+                    
+                    $pie_data_items[] = array(
+                        'label' => sanitize_text_field($item['label']),
+                        'prefix' => sanitize_text_field($item['prefix']),
+                        'value' => floatval($item['value']),
+                        'postfix' => sanitize_text_field($item['postfix']),
+                        'color' => sanitize_text_field($item_color)
+                    );
+                    $index++;
+                }
+            }
+            
+            update_post_meta($post_id, '_cnw_chart_data', json_encode($pie_data_items));
+        }
     }
     
     public function enqueue_scripts() {
@@ -480,6 +641,33 @@ class CNWCharts {
                 'borderWidth' => 1
             );
             
+        } elseif ($chart_type === 'pie' || $chart_type === 'doughnut') {
+            // Pie/Donut Chart - Single dataset with multiple colors
+            $data_values = array();
+            $colors = array();
+            
+            // Default color palette for pie charts
+            $default_colors = array(
+                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', 
+                '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384',
+                '#36A2EB', '#FFCE56'
+            );
+            
+            foreach ($chart_data as $index => $item) {
+                $chart_labels[] = $item['label'];
+                $data_values[] = floatval($item['value']);
+                // Use item color if available, otherwise fall back to palette
+                $item_color = !empty($item['color']) ? $item['color'] : $default_colors[$index % count($default_colors)];
+                $colors[] = $item_color;
+            }
+            
+            $datasets[] = array(
+                'data' => $data_values,
+                'backgroundColor' => $colors,
+                'borderColor' => '#ffffff',
+                'borderWidth' => 2
+            );
+            
         } elseif ($chart_type === 'grouped-bar') {
             // Grouped Bar Chart - Multiple datasets, each with single color
             $all_labels = array();
@@ -539,12 +727,12 @@ class CNWCharts {
                 'resizeDelay' => 0,
                 'plugins' => array(
                     'legend' => array(
-                        'display' => ($chart_type === 'grouped-bar'),
+                        'display' => ($chart_type === 'grouped-bar' || $chart_type === 'pie' || $chart_type === 'doughnut'),
                         'position' => 'top',
                         'align' => 'center',
                         'labels' => array(
                             'usePointStyle' => true,
-                            'pointStyle' => 'rect',
+                            'pointStyle' => ($chart_type === 'pie' || $chart_type === 'doughnut') ? 'circle' : 'rect',
                             'padding' => 20,
                             'font' => array(
                                 'size' => 12
@@ -568,33 +756,8 @@ class CNWCharts {
                 ),
                 'layout' => array(
                     'padding' => array(
-                        'top' => ($chart_type === 'grouped-bar') ? 30 : 0,
+                        'top' => ($chart_type === 'grouped-bar' || $chart_type === 'pie' || $chart_type === 'doughnut') ? 30 : 0,
                         'bottom' => 10
-                    )
-                ),
-                'scales' => array(
-                    'y' => array(
-                        'beginAtZero' => true,
-                        'grid' => array(
-                            'color' => '#e0e0e0'
-                        ),
-                        'ticks' => array(
-                            'stepSize' => 10,
-                            'font' => array(
-                                'size' => 11
-                            ),
-                            'callback' => '%%Y_AXIS_CALLBACK%%'
-                        )
-                    ),
-                    'x' => array(
-                        'grid' => array(
-                            'display' => false
-                        ),
-                        'ticks' => array(
-                            'font' => array(
-                                'size' => 11
-                            )
-                        )
                     )
                 ),
                 'interaction' => array(
@@ -606,6 +769,35 @@ class CNWCharts {
             )
         );
         
+        // Add scales only for bar charts (pie/donut don't use scales)
+        if ($chart_type === 'bar' || $chart_type === 'grouped-bar') {
+            $chart_config['options']['scales'] = array(
+                'y' => array(
+                    'beginAtZero' => true,
+                    'grid' => array(
+                        'color' => '#e0e0e0'
+                    ),
+                    'ticks' => array(
+                        'stepSize' => 10,
+                        'font' => array(
+                            'size' => 11
+                        ),
+                        'callback' => '%%Y_AXIS_CALLBACK%%'
+                    )
+                ),
+                'x' => array(
+                    'grid' => array(
+                        'display' => false
+                    ),
+                    'ticks' => array(
+                        'font' => array(
+                            'size' => 11
+                        )
+                    )
+                )
+            );
+        }
+        
         $unique_id = 'cnw-chart-' . $chart_id . '-' . uniqid();
         
         $output = '<div class="cnw-chart-container" style="width: 100%; max-width: 100%; height: ' . intval($chart_height) . 'px; margin: 20px 0; background: transparent; box-sizing: border-box;">';
@@ -613,7 +805,7 @@ class CNWCharts {
         $output .= '</div>';
         // Prepare chart data with prefix/postfix for tooltips
         $chart_items_data = array();
-        if ($chart_type === 'bar') {
+        if ($chart_type === 'bar' || $chart_type === 'pie' || $chart_type === 'doughnut') {
             foreach ($chart_data as $item) {
                 $chart_items_data[$item['label']] = array(
                     'prefix' => isset($item['prefix']) ? $item['prefix'] : '',
@@ -957,7 +1149,7 @@ class CNWCharts {
             $chart_data = $data[3];
             
             // Validate chart type
-            if (!in_array($chart_type, array('bar', 'grouped-bar'))) {
+            if (!in_array($chart_type, array('bar', 'grouped-bar', 'pie', 'doughnut'))) {
                 continue;
             }
             
