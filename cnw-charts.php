@@ -32,6 +32,9 @@ class CNWCharts {
         add_action('save_post', array($this, 'save_chart_meta'));
         add_action('add_meta_boxes', array($this, 'add_chart_meta_boxes'));
         add_action('admin_footer', array($this, 'add_shortcode_copy_script'));
+        add_action('admin_init', array($this, 'handle_export_import'));
+        add_action('admin_notices', array($this, 'admin_notices'));
+        add_action('admin_menu', array($this, 'add_import_export_menu'));
     }
     
     public function register_post_type() {
@@ -751,6 +754,232 @@ class CNWCharts {
             </script>
             <?php
         }
+    }
+    
+    public function add_import_export_menu() {
+        add_submenu_page(
+            'edit.php?post_type=cnw_chart',
+            'Import/Export Charts',
+            'Import/Export',
+            'manage_options',
+            'cnw-charts-import-export',
+            array($this, 'import_export_page')
+        );
+    }
+    
+    public function import_export_page() {
+        $charts = get_posts(array(
+            'post_type' => 'cnw_chart',
+            'post_status' => 'publish',
+            'numberposts' => -1
+        ));
+        $chart_count = count($charts);
+        ?>
+        <div class="wrap">
+            <h1>📊 CNW Charts - Import/Export</h1>
+            <p>Transfer your charts between WordPress sites using CSV files.</p>
+            
+            <div style="display: flex; gap: 30px; margin-top: 30px;">
+                <!-- Export Section -->
+                <div style="flex: 1; background: #fff; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h2 style="margin-top: 0; color: #2271b1;">📥 Export Charts</h2>
+                    <p>Export all your charts to a CSV file that can be imported on another WordPress site.</p>
+                    
+                    <div style="background: #f0f6fc; border: 1px solid #c3c4c7; border-radius: 4px; padding: 15px; margin: 15px 0;">
+                        <strong>📈 Charts Available:</strong> <?php echo $chart_count; ?> chart<?php echo $chart_count !== 1 ? 's' : ''; ?>
+                    </div>
+                    
+                    <?php if ($chart_count > 0): ?>
+                        <p><strong>What will be exported:</strong></p>
+                        <ul style="margin-left: 20px;">
+                            <li>Chart titles and configurations</li>
+                            <li>Chart types (bar/grouped bar)</li>
+                            <li>Custom heights</li>
+                            <li>All data items with values, colors, prefix/suffix</li>
+                        </ul>
+                        
+                        <a href="<?php echo esc_url(admin_url('admin.php?action=export_charts_csv')); ?>" 
+                           class="button button-primary button-large" 
+                           style="margin-top: 15px; text-decoration: none;">
+                            📥 Export All Charts to CSV
+                        </a>
+                    <?php else: ?>
+                        <p style="color: #646970; font-style: italic;">No charts available to export. Create some charts first!</p>
+                    <?php endif; ?>
+                </div>
+                
+                <!-- Import Section -->
+                <div style="flex: 1; background: #fff; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h2 style="margin-top: 0; color: #2271b1;">📤 Import Charts</h2>
+                    <p>Import charts from a CSV file exported from another CNW Charts installation.</p>
+                    
+                    <form method="post" enctype="multipart/form-data" id="import-form">
+                        <?php wp_nonce_field('import_charts', 'import_charts_nonce'); ?>
+                        
+                        <div style="background: #fff3cd; border: 1px solid #ffecb5; border-radius: 4px; padding: 15px; margin: 15px 0;">
+                            <strong>⚠️ Important:</strong> Only upload CSV files exported from CNW Charts plugin.
+                        </div>
+                        
+                        <p><strong>Requirements:</strong></p>
+                        <ul style="margin-left: 20px; margin-bottom: 20px;">
+                            <li>CSV file exported from CNW Charts</li>
+                            <li>Valid chart data format</li>
+                            <li>Supported chart types: bar, grouped-bar</li>
+                        </ul>
+                        
+                        <div style="border: 2px dashed #c3c4c7; border-radius: 8px; padding: 30px; text-align: center; background: #fafafa; margin: 20px 0;">
+                            <input type="file" name="csv_file" accept=".csv" required id="csv-file-input" style="margin-bottom: 15px;">
+                            <br>
+                            <label for="csv-file-input" style="color: #646970;">Select your CSV file to import</label>
+                        </div>
+                        
+                        <input type="submit" name="import_charts_csv" value="📤 Import Charts from CSV" 
+                               class="button button-primary button-large" style="margin-top: 15px;">
+                    </form>
+                </div>
+            </div>
+            
+            <div style="background: #f0f6fc; border: 1px solid #c3c4c7; border-radius: 4px; padding: 20px; margin: 30px 0;">
+                <h3 style="margin-top: 0;">💡 How it works:</h3>
+                <ol style="margin-left: 20px;">
+                    <li><strong>Export:</strong> Click "Export All Charts to CSV" to download a file containing all your charts</li>
+                    <li><strong>Transfer:</strong> Copy the CSV file to your target WordPress site</li>
+                    <li><strong>Import:</strong> Upload the CSV file using the import form above</li>
+                    <li><strong>Done:</strong> Your charts will be recreated with all settings and data intact</li>
+                </ol>
+            </div>
+        </div>
+        
+        <style>
+        .wrap h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .button-large {
+            padding: 10px 20px;
+            height: auto;
+            font-size: 14px;
+        }
+        </style>
+        <?php
+    }
+    
+    public function handle_export_import() {
+        // Handle CSV export
+        if (isset($_GET['action']) && $_GET['action'] === 'export_charts_csv' && current_user_can('manage_options')) {
+            $this->export_charts_csv();
+        }
+        
+        // Handle CSV import
+        if (isset($_POST['import_charts_csv']) && wp_verify_nonce($_POST['import_charts_nonce'], 'import_charts') && current_user_can('manage_options')) {
+            $this->import_charts_csv();
+        }
+    }
+    
+    public function admin_notices() {
+        if (isset($_GET['import_success'])) {
+            $count = intval($_GET['import_success']);
+            echo '<div class="notice notice-success is-dismissible"><p>' . sprintf(__('Successfully imported %d charts.'), $count) . '</p></div>';
+        }
+        if (isset($_GET['import_error'])) {
+            echo '<div class="notice notice-error is-dismissible"><p>' . esc_html($_GET['import_error']) . '</p></div>';
+        }
+    }
+    
+    public function export_charts_csv() {
+        $charts = get_posts(array(
+            'post_type' => 'cnw_chart',
+            'post_status' => 'publish',
+            'numberposts' => -1
+        ));
+        
+        if (empty($charts)) {
+            wp_die('No charts found to export.');
+        }
+        
+        $filename = 'cnw-charts-export-' . date('Y-m-d-H-i-s') . '.csv';
+        
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        
+        $output = fopen('php://output', 'w');
+        
+        // CSV Header
+        fputcsv($output, array(
+            'Chart Title',
+            'Chart Type', 
+            'Chart Height',
+            'Chart Data (JSON)'
+        ));
+        
+        foreach ($charts as $chart) {
+            $chart_type = get_post_meta($chart->ID, '_cnw_chart_type', true);
+            $chart_height = get_post_meta($chart->ID, '_cnw_chart_height', true);
+            $chart_data = get_post_meta($chart->ID, '_cnw_chart_data', true);
+            
+            fputcsv($output, array(
+                $chart->post_title,
+                $chart_type,
+                $chart_height ? $chart_height : '400',
+                $chart_data
+            ));
+        }
+        
+        fclose($output);
+        exit;
+    }
+    
+    public function import_charts_csv() {
+        if (!isset($_FILES['csv_file']) || $_FILES['csv_file']['error'] !== UPLOAD_ERR_OK) {
+            wp_redirect(admin_url('edit.php?post_type=cnw_chart&page=cnw-charts-import-export&import_error=' . urlencode('Please select a valid CSV file.')));
+            exit;
+        }
+        
+        $file = $_FILES['csv_file']['tmp_name'];
+        $handle = fopen($file, 'r');
+        
+        if (!$handle) {
+            wp_redirect(admin_url('edit.php?post_type=cnw_chart&page=cnw-charts-import-export&import_error=' . urlencode('Could not read CSV file.')));
+            exit;
+        }
+        
+        // Skip header row
+        fgetcsv($handle);
+        
+        $imported_count = 0;
+        
+        while (($data = fgetcsv($handle)) !== FALSE) {
+            if (count($data) < 4) continue;
+            
+            $chart_title = sanitize_text_field($data[0]);
+            $chart_type = sanitize_text_field($data[1]);
+            $chart_height = intval($data[2]);
+            $chart_data = $data[3];
+            
+            // Validate chart type
+            if (!in_array($chart_type, array('bar', 'grouped-bar'))) {
+                continue;
+            }
+            
+            // Create new chart post
+            $post_id = wp_insert_post(array(
+                'post_title' => $chart_title,
+                'post_type' => 'cnw_chart',
+                'post_status' => 'publish'
+            ));
+            
+            if (!is_wp_error($post_id)) {
+                update_post_meta($post_id, '_cnw_chart_type', $chart_type);
+                update_post_meta($post_id, '_cnw_chart_height', $chart_height ? $chart_height : 400);
+                update_post_meta($post_id, '_cnw_chart_data', $chart_data);
+                $imported_count++;
+            }
+        }
+        
+        fclose($handle);
+        
+        wp_redirect(admin_url('edit.php?post_type=cnw_chart&page=cnw-charts-import-export&import_success=' . $imported_count));
+        exit;
     }
     
     public function activate() {
