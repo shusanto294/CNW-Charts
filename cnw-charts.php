@@ -175,9 +175,18 @@ class CNWCharts {
                                             </div>
                                         </div>
                                         
-                                        <div style="margin-bottom: 15px;">
-                                            <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">Group Name:</label>
-                                            <input type="text" name="chart_groups[<?php echo $group_index; ?>][group_name]" value="<?php echo esc_attr($group['group_name']); ?>" placeholder="Enter group name" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />
+                                        <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                                            <div style="flex: 1;">
+                                                <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">Group Name:</label>
+                                                <input type="text" name="chart_groups[<?php echo $group_index; ?>][group_name]" value="<?php echo esc_attr($group['group_name']); ?>" placeholder="Enter group name" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />
+                                            </div>
+                                            <div style="flex: 0 0 140px;">
+                                                <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">Group Color:</label>
+                                                <div style="display: flex; align-items: center; gap: 5px;">
+                                                    <input type="color" name="chart_groups[<?php echo $group_index; ?>][color]" value="<?php echo esc_attr(isset($group['color']) ? $group['color'] : '#007cba'); ?>" style="width: 40px; height: 32px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; padding: 0;" />
+                                                    <input type="text" name="chart_groups[<?php echo $group_index; ?>][color_text]" value="<?php echo esc_attr(isset($group['color']) ? $group['color'] : '#007cba'); ?>" placeholder="#007cba" style="width: 90px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;" />
+                                                </div>
+                                            </div>
                                         </div>
                                         
                                         <div class="group-data-items" data-group="<?php echo $group_index; ?>">
@@ -206,13 +215,6 @@ class CNWCharts {
                                                             <div style="flex: 0 0 60px;">
                                                                 <label style="display: block; margin-bottom: 3px; font-weight: bold; font-size: 11px; color: #666;">Postfix:</label>
                                                                 <input type="text" name="chart_groups[<?php echo $group_index; ?>][items][<?php echo $item_index; ?>][postfix]" value="<?php echo esc_attr(isset($item['postfix']) ? $item['postfix'] : ''); ?>" placeholder="%" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px;" />
-                                                            </div>
-                                                            <div style="flex: 0 0 85px;">
-                                                                <label style="display: block; margin-bottom: 3px; font-weight: bold; font-size: 11px; color: #666;">Color:</label>
-                                                                <div style="display: flex; align-items: center; gap: 3px;">
-                                                                    <input type="color" name="chart_groups[<?php echo $group_index; ?>][items][<?php echo $item_index; ?>][color]" value="<?php echo esc_attr($item['color']); ?>" style="width: 28px; height: 24px; border: 1px solid #ccc; border-radius: 3px; cursor: pointer; padding: 0;" />
-                                                                    <input type="text" name="chart_groups[<?php echo $group_index; ?>][items][<?php echo $item_index; ?>][color_text]" value="<?php echo esc_attr($item['color']); ?>" placeholder="#007cba" style="width: 50px; padding: 3px; border: 1px solid #ccc; border-radius: 3px; font-size: 10px;" />
-                                                                </div>
                                                             </div>
                                                             <div style="flex: 0 0 auto;">
                                                                 <button type="button" class="remove-group-item" style="background: #dc3545; color: white; border: none; padding: 6px 10px; border-radius: 3px; cursor: pointer; font-size: 11px; margin-top: 15px;">Remove</button>
@@ -364,6 +366,7 @@ class CNWCharts {
                 if (!empty($group['group_name'])) {
                     $group_data = array(
                         'group_name' => sanitize_text_field($group['group_name']),
+                        'color' => sanitize_text_field(isset($group['color']) ? $group['color'] : '#007cba'),
                         'items' => array()
                     );
                     
@@ -374,8 +377,7 @@ class CNWCharts {
                                     'label' => sanitize_text_field($item['label']),
                                     'prefix' => sanitize_text_field($item['prefix']),
                                     'value' => floatval($item['value']),
-                                    'postfix' => sanitize_text_field($item['postfix']),
-                                    'color' => sanitize_text_field($item['color'])
+                                    'postfix' => sanitize_text_field($item['postfix'])
                                 );
                             }
                         }
@@ -469,7 +471,6 @@ class CNWCharts {
             // Second pass: create datasets for each group
             foreach ($chart_data as $group) {
                 $group_data = array();
-                $group_colors = array();
                 
                 // Initialize all values to 0
                 foreach ($all_labels as $label) {
@@ -480,12 +481,11 @@ class CNWCharts {
                 if (isset($group['items'])) {
                     foreach ($group['items'] as $item) {
                         $group_data[$item['label']] = floatval($item['value']);
-                        $group_colors[] = $item['color'];
                     }
                 }
                 
-                // Use first item's color for the entire dataset
-                $dataset_color = !empty($group_colors) ? $group_colors[0] : '#007cba';
+                // Use group color
+                $dataset_color = isset($group['color']) ? $group['color'] : '#007cba';
                 
                 $datasets[] = array(
                     'label' => $group['group_name'],
@@ -508,6 +508,7 @@ class CNWCharts {
             'options' => array(
                 'responsive' => true,
                 'maintainAspectRatio' => false,
+                'resizeDelay' => 0,
                 'plugins' => array(
                     'legend' => array(
                         'display' => ($chart_type === 'grouped-bar'),
@@ -520,7 +521,31 @@ class CNWCharts {
                             'font' => array(
                                 'size' => 12
                             )
+                        ),
+                        'fullSize' => true
+                    ),
+                    'layout' => array(
+                        'padding' => array(
+                            'top' => ($chart_type === 'grouped-bar') ? 30 : 0
                         )
+                    ),
+                    'tooltip' => array(
+                        'enabled' => true,
+                        'backgroundColor' => 'rgba(0, 0, 0, 0.8)',
+                        'titleColor' => '#ffffff',
+                        'bodyColor' => '#ffffff',
+                        'borderColor' => '#ddd',
+                        'borderWidth' => 1,
+                        'cornerRadius' => 4,
+                        'displayColors' => true,
+                        'callbacks' => array(
+                            'label' => '%%TOOLTIP_CALLBACK%%'
+                        )
+                    )
+                ),
+                'layout' => array(
+                    'padding' => array(
+                        'bottom' => 10
                     )
                 ),
                 'scales' => array(
@@ -557,13 +582,83 @@ class CNWCharts {
         
         $unique_id = 'cnw-chart-' . $chart_id . '-' . uniqid();
         
-        $output = '<div style="width: 800px; height: 400px; margin: 20px 0; border: 1px solid #ddd; border-radius: 8px; padding: 20px; background: #ffffff;">';
-        $output .= '<canvas id="' . esc_attr($unique_id) . '"></canvas>';
+        $output = '<div class="cnw-chart-container" style="width: 100%; max-width: 100%; height: 400px; margin: 20px 0; border: 1px solid #ddd; border-radius: 8px; padding: 20px; background: #ffffff; box-sizing: border-box;">';
+        $output .= '<canvas id="' . esc_attr($unique_id) . '" style="width: 100%; height: 100%;"></canvas>';
         $output .= '</div>';
+        // Prepare chart data with prefix/postfix for tooltips
+        $chart_items_data = array();
+        if ($chart_type === 'bar') {
+            foreach ($chart_data as $item) {
+                $chart_items_data[$item['label']] = array(
+                    'prefix' => isset($item['prefix']) ? $item['prefix'] : '',
+                    'postfix' => isset($item['postfix']) ? $item['postfix'] : ''
+                );
+            }
+        } elseif ($chart_type === 'grouped-bar') {
+            foreach ($chart_data as $group) {
+                if (isset($group['items'])) {
+                    foreach ($group['items'] as $item) {
+                        if (!isset($chart_items_data[$item['label']])) {
+                            $chart_items_data[$item['label']] = array();
+                        }
+                        $chart_items_data[$item['label']][$group['group_name']] = array(
+                            'prefix' => isset($item['prefix']) ? $item['prefix'] : '',
+                            'postfix' => isset($item['postfix']) ? $item['postfix'] : ''
+                        );
+                    }
+                }
+            }
+        }
+        
+        // Replace the tooltip callback placeholder
+        $config_json = json_encode($chart_config);
+        $config_json = str_replace('"%%TOOLTIP_CALLBACK%%"', 'function(context) {
+            var chartData = ' . json_encode($chart_items_data) . ';
+            var label = context.label;
+            var datasetLabel = context.dataset.label || "";
+            var value = context.raw;
+            
+            var prefix = "";
+            var postfix = "";
+            
+            if (chartData[label]) {
+                if (datasetLabel && chartData[label][datasetLabel]) {
+                    prefix = chartData[label][datasetLabel].prefix || "";
+                    postfix = chartData[label][datasetLabel].postfix || "";
+                } else if (chartData[label].prefix !== undefined) {
+                    prefix = chartData[label].prefix || "";
+                    postfix = chartData[label].postfix || "";
+                }
+            }
+            
+            var formattedValue = prefix + value + postfix;
+            return (datasetLabel ? datasetLabel + ": " : "") + formattedValue;
+        }', $config_json);
+        
+        $output .= '<style>
+            .cnw-chart-container {
+                margin-bottom: 30px !important;
+            }
+        </style>';
+        
         $output .= '<script>
             document.addEventListener("DOMContentLoaded", function() {
                 var ctx = document.getElementById("' . esc_js($unique_id) . '").getContext("2d");
-                var chart = new Chart(ctx, ' . json_encode($chart_config) . ');
+                var chartConfig = ' . $config_json . ';
+                var chart = new Chart(ctx, chartConfig);
+                
+                // Ensure chart resizes properly
+                if (window.ResizeObserver) {
+                    var resizeObserver = new ResizeObserver(function(entries) {
+                        chart.resize();
+                    });
+                    resizeObserver.observe(ctx.canvas.parentElement);
+                }
+                
+                // Handle window resize as well
+                window.addEventListener("resize", function() {
+                    chart.resize();
+                });
             });
         </script>';
         

@@ -84,9 +84,18 @@ jQuery(document).ready(function($) {
                     '<button type="button" class="remove-chart-group" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">Remove Group</button>' +
                 '</div>' +
             '</div>' +
-            '<div style="margin-bottom: 15px;">' +
-                '<label style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">Group Name:</label>' +
-                '<input type="text" name="chart_groups[' + index + '][group_name]" placeholder="Enter group name" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />' +
+            '<div style="display: flex; gap: 15px; margin-bottom: 15px;">' +
+                '<div style="flex: 1;">' +
+                    '<label style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">Group Name:</label>' +
+                    '<input type="text" name="chart_groups[' + index + '][group_name]" placeholder="Enter group name" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" />' +
+                '</div>' +
+                '<div style="flex: 0 0 140px;">' +
+                    '<label style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">Group Color:</label>' +
+                    '<div style="display: flex; align-items: center; gap: 5px;">' +
+                        '<input type="color" name="chart_groups[' + index + '][color]" value="#007cba" style="width: 40px; height: 32px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; padding: 0;" />' +
+                        '<input type="text" name="chart_groups[' + index + '][color_text]" value="#007cba" placeholder="#007cba" style="width: 90px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px;" />' +
+                    '</div>' +
+                '</div>' +
             '</div>' +
             '<div class="group-data-items" data-group="' + index + '">' +
                 '<h5 style="margin-bottom: 10px; color: #555;">Data Items:</h5>' +
@@ -125,13 +134,6 @@ jQuery(document).ready(function($) {
             '<div style="flex: 0 0 60px;">' +
                 '<label style="display: block; margin-bottom: 3px; font-weight: bold; font-size: 11px; color: #666;">Postfix:</label>' +
                 '<input type="text" name="chart_groups[' + groupIndex + '][items][' + itemIndex + '][postfix]" placeholder="%" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px;" />' +
-            '</div>' +
-            '<div style="flex: 0 0 85px;">' +
-                '<label style="display: block; margin-bottom: 3px; font-weight: bold; font-size: 11px; color: #666;">Color:</label>' +
-                '<div style="display: flex; align-items: center; gap: 3px;">' +
-                    '<input type="color" name="chart_groups[' + groupIndex + '][items][' + itemIndex + '][color]" value="#007cba" style="width: 28px; height: 24px; border: 1px solid #ccc; border-radius: 3px; cursor: pointer; padding: 0;" />' +
-                    '<input type="text" name="chart_groups[' + groupIndex + '][items][' + itemIndex + '][color_text]" value="#007cba" placeholder="#007cba" style="width: 50px; padding: 3px; border: 1px solid #ccc; border-radius: 3px; font-size: 10px;" />' +
-                '</div>' +
             '</div>' +
             '<div style="flex: 0 0 auto;">' +
                 '<button type="button" class="remove-group-item" style="background: #dc3545; color: white; border: none; padding: 6px 10px; border-radius: 3px; cursor: pointer; font-size: 11px; margin-top: 15px;">Remove</button>' +
